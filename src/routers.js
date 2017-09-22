@@ -1,7 +1,7 @@
-import cachePage from "./page/cachePage.vue"
-import propertiesPage from "./page/propertiesPage.vue"
+import CalendarPage from "./page/CalendarPage.vue"
+import SchedulePage from "./page/SchedulePage.vue"
 
 export default [
-    {path: '/cache', component: cachePage},
-    {path: '/properties', component: propertiesPage}
+    {path: '/calendar', component: CalendarPage},
+    {path: '/schedule', component: SchedulePage}
 ]
