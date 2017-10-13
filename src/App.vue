@@ -13,7 +13,7 @@
 </template>
 
 <script>
-  import "./assets/base.css"
+  require("./assets/base.scss")
 
 
   export default {

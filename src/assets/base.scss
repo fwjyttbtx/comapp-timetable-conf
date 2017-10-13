@@ -1,0 +1,33 @@
+$i: 4;
+@while $i <= 32 {
+  .mh-#{$i} {
+    margin-right: 1px * $i;
+    margin-left: 1px * $i;
+  }
+  .mv-#{$i} {
+    margin-top: 1px * $i;
+    margin-bottom: 1px * $i;
+  }
+  $i: $i + 4;
+}
+
+.text {
+  &-center {
+    text-align: center;
+  }
+  &-right {
+    text-align: right;
+  }
+}
+
+.w25p {
+  width: 25% !important;
+}
+
+.w80p {
+  width: 80% !important;
+}
+
+.p-0 {
+  padding: 0;
+}

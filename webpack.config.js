@@ -30,6 +30,10 @@ module.exports = (options = {}) => ({
         use: ['style-loader', 'css-loader', 'postcss-loader']
       },
       {
+        test: /\.scss$/,
+        loader: ['style-loader', 'css-loader', 'sass-loader']
+      },
+      {
         test: /\.(png|jpg|jpeg|gif|eot|ttf|woff|woff2|svg|svgz)(\?.+)?$/,
         use: [{
           loader: 'url-loader',
@@ -54,6 +58,11 @@ module.exports = (options = {}) => ({
       template: 'src/index.html'
     })
   ],
+  resolveLoader: {
+    alias: {
+      'scss-loader': 'sass-loader'
+    }
+  },
   resolve: {
     alias: {
       '~': resolve(__dirname, 'src')
