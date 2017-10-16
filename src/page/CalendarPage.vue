@@ -9,16 +9,16 @@
           v-loading="loading"
           element-loading-text="拼命加载中"
       >
-        <el-table-column prop="yearTerm" label="学期代码" width="100" header-align="center"></el-table-column>
-        <el-table-column prop="termBegin" label="学期开始日期" header-align="center"></el-table-column>
-        <el-table-column prop="termEnd" label="学期结束日期" header-align="center"></el-table-column>
-        <el-table-column prop="classStart" label="上课开始日期" header-align="center"></el-table-column>
-        <el-table-column prop="teachWeeks" label="教学周次" header-align="center"></el-table-column>
-        <el-table-column prop="allWeeks" label="学期总周次" header-align="center"></el-table-column>
-        <el-table-column prop="amClasses" label="上午节次" header-align="center"></el-table-column>
-        <el-table-column prop="pmClasses" label="下午节次" header-align="center"></el-table-column>
-        <el-table-column prop="eveClasses" label="晚上节次" header-align="center"></el-table-column>
-        <el-table-column label="操作" align="center">
+        <el-table-column prop="yearTerm" label="学期代码" width="130" align="center"></el-table-column>
+        <el-table-column prop="termBegin" label="学期开始日期" width="120" align="center"></el-table-column>
+        <el-table-column prop="termEnd" label="学期结束日期" width="120" align="center"></el-table-column>
+        <el-table-column prop="classStart" label="上课开始日期" width="120" align="center"></el-table-column>
+        <el-table-column prop="teachWeeks" label="教学周次" align="center"></el-table-column>
+        <el-table-column prop="allWeeks" label="学期总周次" width="110" align="center"></el-table-column>
+        <el-table-column prop="amClasses" label="上午节次" align="center"></el-table-column>
+        <el-table-column prop="pmClasses" label="下午节次" align="center"></el-table-column>
+        <el-table-column prop="eveClasses" label="晚上节次" align="center"></el-table-column>
+        <el-table-column label="操作" align="center" width="110">
           <template scope="scope">
             <el-button @click="handleClick(scope.row)" type="text" size="small">编辑</el-button>
             <el-button type="text" size="small" @click="deleteProperty(scope.row.wid)" v-if="!scope.row.editable">删除
@@ -40,11 +40,13 @@
 
     <el-dialog title="新建学期信息" :visible.sync="dialogFormVisible" id="calendarForm" :close-on-click-modal="false"
                top="32px">
-      <el-form ref="dialogForm" :rules="rules" :model="calendar" label-width="120px">
+      <el-form ref="dialogForm" :rules="rules" :model="calendar" label-width="140px">
         <el-form-item label="学期代码" prop="yearTerm">
-          <el-select v-model="calendar.yearTerm" placeholder="请选择" class="w80p">
+          <!--如果查询得到值 在下拉中无法获取 则显示一个不可编辑的输入框-->
+          <el-select v-model="calendar.yearTerm" placeholder="请选择" class="w80p" v-if="calendar.hasTerm">
             <el-option v-for="item in yearTerms" :value="item.value" :label="item.label"></el-option>
           </el-select>
+          <el-input :disabled="true" v-if="!calendar.hasTerm" :value="calendar.yearTerm" class="w80p"></el-input>
         </el-form-item>
         <el-form-item label="开始日期" prop="termBegin">
           <el-date-picker v-model="calendar.termBegin" type="date" format="yyyy-MM-dd" placeholder="选择学期开始日期" class="w80p" @change="termDateChange()"></el-date-picker>
@@ -106,8 +108,21 @@
           eveClasses: 4
         },
         rules: {
-          key: [{required: true, message: "校历键不能为空", trigger: "blur"}],
-          value: [{required: true, message: "校历值不能为空", trigger: "blur"}]
+          yearTerm: [
+            {required: true, message: "学年学期选择不能为空", trigger: "change"}
+          ],
+          termBegin: [
+            {type: 'date', required: true, message: "请选择学期开始日期", trigger: "change"}
+          ],
+          termEnd: [
+            {type: 'date', required: true, message: "请选择学期结束日期", trigger: "change"},
+            {validator: (rule, value, callback) => {
+              if(value && value <= this.calendar.termBegin) {callback(new Error("学期结束日期应该大于学期开始日期"))}
+            }, trigger: "change"}
+          ],
+          classStart: [
+            {type: 'date', required: true, message: "请选择学期开始上课日期", trigger: "change"}
+          ]
         }
       }
     },
@@ -123,12 +138,10 @@
         lastYear++;
         currentYear++;
       }
-      this.calendar.yearTerm = this.yearTerms[4].value;
       this.fillTableData();
     },
     methods: {
       termDateChange() {
-        console.log(this.calendar)
         if(this.calendar.termBegin && this.calendar.termEnd) {
           let start = moment(this.calendar.termBegin);
           let end = moment(this.calendar.termEnd);
@@ -204,6 +217,7 @@
       addNewDialog() {
         this.calendar = {
           yearTerm: "",
+          hasTerm: true,
           termBegin: null,
           termEnd: null,
           classStart: null,
@@ -213,13 +227,18 @@
           pmClasses: 4,
           eveClasses: 4
         };
+        this.calendar.yearTerm = this.yearTerms[4].value;
         this.dialogFormVisible = true;
         if (this.$refs['dialogForm']) this.$refs['dialogForm'].resetFields();
       },
       handleClick(row) {
         // 复制一份副本 避免row内容同步做了更新
-        this.calendar = JSON.parse(JSON.stringify(row));
-        this.calendar.edit = true;
+        let calendar = JSON.parse(JSON.stringify(row));
+        this.yearTerms.forEach(yearTerm => {
+          if(yearTerm.value === calendar.yearTerm) calendar.hasTerm = true;
+        });
+        calendar.edit = true;
+        this.calendar = calendar;
         this.dialogFormVisible = true;
         if (this.$refs['dialogForm']) this.$refs['dialogForm'].resetFields();
       },

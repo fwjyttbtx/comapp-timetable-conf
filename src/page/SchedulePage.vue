@@ -47,14 +47,17 @@
       </el-pagination>
     </div>
 
-    <el-dialog title="新建节次时刻信息" :visible.sync="dialogFormVisible" id="scheduleForm" :close-on-click-modal="false"
-               top="32px">
-      <el-form ref="dialogForm" :rules="rules" :model="schedule" label-width="120px">
+    <el-dialog title="新建节次时刻信息" :visible.sync="dialogFormVisible" id="scheduleForm" :close-on-click-modal="false" top="32px">
+      <el-form ref="dialogForm" :rules="rules" :model="schedule" label-width="140px">
         <el-form-item label="开始日期" prop="scheduleStart">
           <el-date-picker v-model="schedule.scheduleStart" type="date" placeholder="此项选择为空则认为为此时刻为全年时刻信息" class="w80p"></el-date-picker>
         </el-form-item>
         <el-form-item label="结束日期" prop="scheduleEnd">
           <el-date-picker v-model="schedule.scheduleEnd" type="date" placeholder="此项选择为空则认为为此时刻为全年时刻信息" class="w80p"></el-date-picker>
+        </el-form-item>
+        <el-form-item label="课时时长（分钟）" prop="times" :required="true">
+          <el-input-number :min="0" v-model="schedule.sectionRange" placeholder="输入一节课的课时时长，单位分钟" class="w80p"></el-input-number>
+          <div>填入0可自定义课时节次时长</div>
         </el-form-item>
         <el-form-item label="节次时刻" prop="times" :required="true">
           <div v-for="(section, index) in schedule.sections" class="mv-4">
@@ -67,6 +70,7 @@
                 format="HH:mm"
                 align="center"
                 class="w25p"
+                @change="startTimeSelect(section)"
             ></el-time-picker>
             <el-time-picker
                 :editable="false"
@@ -76,6 +80,7 @@
                 format="HH:mm"
                 align="center"
                 class="w25p"
+                :disabled="schedule.sectionRange > 0"
             ></el-time-picker>
             <el-button @click="deleteSectionRow(section)" type="text" size="small" v-if="index === (schedule.sections.length - 1) && schedule.sections.length > 1">删除</el-button>
             <el-button @click="addSectionRow(section)" type="text" size="small" v-if="index === (schedule.sections.length - 1)">添加</el-button>
@@ -135,6 +140,10 @@
       vm.reloadTable();
     },
     methods: {
+      startTimeSelect(section) {
+        if(this.schedule.sectionRange <= 0) return;
+        section.sectionEndDate = moment(section.sectionStartDate).add(this.schedule.sectionRange, "minutes");
+      },
       deleteSectionRow(section) {
         this.schedule.sections.pop()
       },
@@ -229,8 +238,9 @@
       addNewDialog() {
         this.schedule = {
           scheduleStart: "",
-            scheduleEnd: "",
-            sections: JSON.parse(JSON.stringify(this.defaultSections))
+          scheduleEnd: "",
+          sectionRange: "50",
+          sections: JSON.parse(JSON.stringify(this.defaultSections))
         };
         this.dialogFormVisible = true;
         if (this.$refs['dialogForm']) this.$refs['dialogForm'].resetFields();
@@ -240,12 +250,24 @@
         let schedule = JSON.parse(JSON.stringify(row));
         schedule.scheduleStart = schedule.scheduleStart === '全年' ? '' : schedule.scheduleStart;
         schedule.scheduleEnd = schedule.scheduleEnd === '全年' ? '' : schedule.scheduleEnd;
+        // 检查是否每个课节次的间隔时间都是一样的如果一样填入sectionRange 如果不一致 填入0
+        let range;
         schedule.sections.forEach((section, idx) => {
           let startArr = section.sectionStart.split(':');
           let endArr = section.sectionEnd.split(':');
           section.sectionStartDate = new Date(1900, 1, 1, parseInt(startArr[0]), parseInt(startArr[1]), 0);
           section.sectionEndDate = new Date(1900, 1, 1, parseInt(endArr[0]), parseInt(endArr[1]), 0);
+          if(range === 0) return true;
+          let startMoment = moment(section.sectionStartDate);
+          let endMoment = moment(section.sectionEndDate);
+          let sectionRange = endMoment.diff(startMoment, 'minutes');
+          if(!range) {
+            range = sectionRange
+          } else if(range !== sectionRange) {
+            range = 0
+          }
         });
+        schedule.sectionRange = range;
         this.schedule = schedule;
         this.schedule.edit = true;
         this.dialogFormVisible = true;
@@ -258,7 +280,9 @@
           cancelButtonText: '取消',
           type: 'warning'
         }).then(() => {
-          vm.$http.delete(`${api.schedule}/${scheduleStart || ''}/${scheduleEnd || ''}`).then(resp => {
+          let realStart = (!scheduleStart || scheduleStart === '全年') ? 'all' : scheduleStart;
+          let realEnd = (!scheduleEnd || scheduleEnd === '全年') ? 'all' : scheduleEnd;
+          vm.$http.delete(`${api.schedule}/${realStart}/${realEnd}`).then(resp => {
             if (resp.status === 200 && resp.data.code === '0') {
               vm.$message.success(`删除作息信息成功。`);
               vm.reloadTable();
