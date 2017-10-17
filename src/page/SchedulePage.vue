@@ -47,44 +47,70 @@
       </el-pagination>
     </div>
 
-    <el-dialog title="新建节次时刻信息" :visible.sync="dialogFormVisible" id="scheduleForm" :close-on-click-modal="false" top="32px">
+    <el-dialog title="新建节次时刻信息" :visible.sync="dialogFormVisible" id="scheduleForm" :close-on-click-modal="false" top="32px" size="fix-1000">
       <el-form ref="dialogForm" :rules="rules" :model="schedule" label-width="140px">
         <el-form-item label="开始日期" prop="scheduleStart">
-          <el-date-picker v-model="schedule.scheduleStart" type="date" placeholder="此项选择为空则认为为此时刻为全年时刻信息" class="w80p"></el-date-picker>
+          <el-col :span="12">
+            <el-date-picker v-model="schedule.scheduleStart" type="date" placeholder="此项选择为空则认为为此时刻为全年时刻信息" class="w100p"></el-date-picker>
+          </el-col>
         </el-form-item>
         <el-form-item label="结束日期" prop="scheduleEnd">
-          <el-date-picker v-model="schedule.scheduleEnd" type="date" placeholder="此项选择为空则认为为此时刻为全年时刻信息" class="w80p"></el-date-picker>
+          <el-col :span="12">
+            <el-date-picker v-model="schedule.scheduleEnd" type="date" placeholder="此项选择为空则认为为此时刻为全年时刻信息" class="w100p"></el-date-picker>
+          </el-col>
         </el-form-item>
-        <el-form-item label="课时时长（分钟）" prop="times" :required="true">
-          <el-input-number :min="0" v-model="schedule.sectionRange" placeholder="输入一节课的课时时长，单位分钟" class="w80p"></el-input-number>
-          <div>填入0可自定义课时节次时长</div>
+        <el-form-item label="课时时长（分钟）" prop="timesRange" :required="true">
+          <el-col :span="12">
+            <el-input-number :min="0" v-model="schedule.sectionRange" placeholder="输入一节课的课时时长，单位分钟" class="w100p"></el-input-number>
+          </el-col>
+          <el-col :span="12">
+            <div>　　填入0可自定义课时节次时长</div>
+          </el-col>
         </el-form-item>
-        <el-form-item label="节次时刻" prop="times" :required="true">
-          <div v-for="(section, index) in schedule.sections" class="mv-4">
-            <el-input v-model="section.sectionDesc" type="text" class="w25p"></el-input>
-            <el-time-picker
-                :editable="false"
-                placeholder="起始时间"
-                v-model="section.sectionStartDate"
-                :picker-options="{format: 'HH:mm'}"
-                format="HH:mm"
-                align="center"
-                class="w25p"
-                @change="startTimeSelect(section)"
-            ></el-time-picker>
-            <el-time-picker
-                :editable="false"
-                placeholder="结束时间"
-                v-model="section.sectionEndDate"
-                :picker-options="{format: 'HH:mm'}"
-                format="HH:mm"
-                align="center"
-                class="w25p"
-                :disabled="schedule.sectionRange > 0"
-            ></el-time-picker>
+        <el-form-item label="节次时刻" prop="times">
+          <el-row v-for="(section, index) in schedule.sections" class="mb-20">
+            <el-col :span="6">
+              <el-form-item :prop="`sections.${index}.sectionDesc`"
+                            :rules="{required: true, message: '描述信息不能为空', trigger: 'blur'}"
+              >
+                <el-input v-model="section.sectionDesc" type="text" style="width: 95%;"></el-input>
+              </el-form-item>
+            </el-col>
+            <el-col :span="6">
+              <el-form-item :prop="`sections.${index}.sectionStartDate`"
+                            :rules="{validator: sectionStartCheck, trigger: 'change', type: 'date'}"
+              >
+                <el-time-picker
+                    :editable="false"
+                    placeholder="起始时间"
+                    v-model="section.sectionStartDate"
+                    :picker-options="{format: 'HH:mm'}"
+                    format="HH:mm"
+                    align="center"
+                    style="width: 95%;"
+                    @change="startTimeSelect(section)"
+                ></el-time-picker>
+              </el-form-item>
+            </el-col>
+            <el-col :span="6">
+              <el-form-item :prop="`sections.${index}.sectionEndDate`"
+                            :rules="{validator: sectionEndCheck, trigger: 'change', type: 'date'}"
+              >
+                <el-time-picker
+                    :editable="false"
+                    placeholder="结束时间"
+                    v-model="section.sectionEndDate"
+                    :picker-options="{format: 'HH:mm'}"
+                    format="HH:mm"
+                    align="center"
+                    style="width: 95%;"
+                    :disabled="schedule.sectionRange > 0"
+                ></el-time-picker>
+              </el-form-item>
+            </el-col>
             <el-button @click="deleteSectionRow(section)" type="text" size="small" v-if="index === (schedule.sections.length - 1) && schedule.sections.length > 1">删除</el-button>
             <el-button @click="addSectionRow(section)" type="text" size="small" v-if="index === (schedule.sections.length - 1)">添加</el-button>
-          </div>
+          </el-row>
         </el-form-item>
       </el-form>
       <div slot="footer" class="dialog-footer">
@@ -97,7 +123,8 @@
 
 <script>
   import api from '../conf/api'
-  const moment = require('moment')
+  const moment = require('moment');
+
   const NUM_CN = [
     '一', '二', '三', '四', '五', '六', '七', '八', '九', '十',
     '十一', '十二', '十三', '十四', '十五', '十六', '十七', '十八', '十九', '二十',
@@ -118,8 +145,23 @@
         dialogFormVisible: false,
         schedule: {},
         rules: {
-          key: [{required: true, message: "作息键不能为空", trigger: "blur"}],
-          value: [{required: true, message: "作息值不能为空", trigger: "blur"}]
+          scheduleStart: [
+            {validator: (rule, value, callback) => {
+              if(value && this.schedule.scheduleEnd) {
+                this.$refs['dialogForm'].validateField("scheduleEnd")
+              }
+              callback()
+            }, trigger: "change"}
+          ],
+          scheduleEnd: [
+            {validator: (rule, value, callback) => {
+              if(value && value <= this.schedule.scheduleStart) {
+                callback(new Error("作息时间的结束日期应该大于作息开始的日期"))
+              } else {
+                callback()
+              }
+            }, trigger: "change"}
+          ]
         }
       }
     },
@@ -140,9 +182,38 @@
       vm.reloadTable();
     },
     methods: {
+      sectionStartCheck(rule, value, callback) {
+        if(!value) {
+          callback(new Error("作息开始时间不能为空。"));
+        } else {
+          let propsArr = rule.field.split(".");
+          let endDate = this.schedule.sections[parseInt(propsArr[1])].sectionEndDate;
+          if(endDate) {
+            this.$refs['dialogForm'].validateField("sections." + propsArr[1] + ".sectionEndDate");
+          }
+          callback();
+        }
+      },
+      sectionEndCheck(rule, value, callback) {
+        if(!value) {
+          callback(new Error("作息结束时间不能为空。"));
+          return;
+        }
+        let section = this.schedule.sections[parseInt(rule.field.split(".")[1])];
+        let sectionStart = section.sectionStartDate;
+        if(value && sectionStart && value < sectionStart) {
+          callback(new Error("作息的结束时间应该要大于开始时间"))
+        } else {
+          callback();
+        }
+      },
       startTimeSelect(section) {
         if(this.schedule.sectionRange <= 0) return;
-        section.sectionEndDate = moment(section.sectionStartDate).add(this.schedule.sectionRange, "minutes");
+        if(section.sectionStartDate) {
+          section.sectionEndDate = moment(section.sectionStartDate).add(this.schedule.sectionRange, "minutes");
+        } else {
+          section.sectionEndDate = "";
+        }
       },
       deleteSectionRow(section) {
         this.schedule.sections.pop()

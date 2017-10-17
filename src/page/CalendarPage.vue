@@ -48,14 +48,14 @@
           </el-select>
           <el-input :disabled="true" v-if="!calendar.hasTerm" :value="calendar.yearTerm" class="w80p"></el-input>
         </el-form-item>
-        <el-form-item label="开始日期" prop="termBegin">
-          <el-date-picker v-model="calendar.termBegin" type="date" format="yyyy-MM-dd" placeholder="选择学期开始日期" class="w80p" @change="termDateChange()"></el-date-picker>
+        <el-form-item label="开始日期" prop="termBegin" required>
+          <el-date-picker v-model="calendar.termBegin" type="date" :editable="false" format="yyyy-MM-dd" placeholder="选择学期开始日期" class="w80p" @change="termDateChange()"></el-date-picker>
         </el-form-item>
         <el-form-item label="结束日期" prop="termEnd">
-          <el-date-picker v-model="calendar.termEnd" type="date" format="yyyy-MM-dd" placeholder="选择学期结束日期" class="w80p" @change="termDateChange()"></el-date-picker>
+          <el-date-picker v-model="calendar.termEnd" type="date" :editable="false" format="yyyy-MM-dd" placeholder="选择学期结束日期" class="w80p" @change="termDateChange()"></el-date-picker>
         </el-form-item>
         <el-form-item label="上课开始日期" prop="classStart">
-          <el-date-picker v-model="calendar.classStart" type="date" format="yyyy-MM-dd" placeholder="选择上课开始日期" class="w80p"></el-date-picker>
+          <el-date-picker v-model="calendar.classStart" type="date" :editable="false" format="yyyy-MM-dd" placeholder="选择上课开始日期" class="w80p"></el-date-picker>
         </el-form-item>
         <el-form-item label="教学周次" prop="teachWeeks">
           <el-input-number v-model="calendar.teachWeeks" :min="1" class="w80p"></el-input-number>
@@ -112,7 +112,16 @@
             {required: true, message: "学年学期选择不能为空", trigger: "change"}
           ],
           termBegin: [
-            {type: 'date', required: true, message: "请选择学期开始日期", trigger: "change"}
+            {type: 'date', validator: (rule, value, callback) => {
+              if(!value) {
+                callback(new Error("请选择学期开始日期"))
+              } else {
+                if(this.calendar.termEnd) {
+                  this.$refs['dialogForm'].validateField("termEnd");
+                }
+                callback()
+              }
+            }, trigger: "change"}
           ],
           termEnd: [
             {type: 'date', required: true, message: "请选择学期结束日期", trigger: "change"},
@@ -121,7 +130,10 @@
             }, trigger: "change"}
           ],
           classStart: [
-            {type: 'date', required: true, message: "请选择学期开始上课日期", trigger: "change"}
+            {type: 'date', required: true, message: "请选择学期开始上课日期", trigger: "change"},
+            {validator: (rule, value, callback) => {
+              if(value && moment(value).day() !== 1) {callback(new Error("上课的日期应该为上课周的周一，当前日期并非周一日期。"))}
+            }, trigger: "change"}
           ]
         }
       }

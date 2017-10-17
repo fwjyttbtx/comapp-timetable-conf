@@ -6,7 +6,7 @@
   "private": true,
   "scripts": {
     "dev": "webpack-dev-server --inline --hot --open --env.dev",
-    "build": "rimraf dist && webpack -p --progress --hide-modules"
+    "build": "rimraf webapp && webpack -p --progress --hide-modules"
   },
   "dependencies": {
     "axios": "^0.16.2",
